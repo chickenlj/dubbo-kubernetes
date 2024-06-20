@@ -20,6 +20,7 @@ package k8s
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -59,6 +60,7 @@ type KubernetesStore struct {
 	Client    kube_client.Client
 	Converter k8s_common.Converter
 	Scheme    *kube_runtime.Scheme
+	apps      *sync.Map
 }
 
 func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_common.Converter) (store.ResourceStore, error) {

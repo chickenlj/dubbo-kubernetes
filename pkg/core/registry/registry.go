@@ -18,21 +18,25 @@
 package registry
 
 import (
+	"context"
+	"github.com/apache/dubbo-kubernetes/pkg/core/logger"
+	"github.com/apache/dubbo-kubernetes/pkg/core/reg_client"
+	"github.com/apache/dubbo-kubernetes/pkg/core/resources/apis/mesh"
+	"github.com/apache/dubbo-kubernetes/pkg/core/resources/store"
+	gxset "github.com/dubbogo/gost/container/set"
 	"net/url"
 	"sync"
+	"time"
 )
 
 import (
 	"dubbo.apache.org/dubbo-go/v3/common"
 	"dubbo.apache.org/dubbo-go/v3/metadata/report"
 	dubboRegistry "dubbo.apache.org/dubbo-go/v3/registry"
-
-	gxset "github.com/dubbogo/gost/container/set"
 )
 
 import (
 	"github.com/apache/dubbo-kubernetes/pkg/core/consts"
-	"github.com/apache/dubbo-kubernetes/pkg/core/logger"
 	core_manager "github.com/apache/dubbo-kubernetes/pkg/core/resources/manager"
 	"github.com/apache/dubbo-kubernetes/pkg/events"
 )
@@ -40,16 +44,19 @@ import (
 type Registry struct {
 	delegate   dubboRegistry.Registry
 	sdDelegate dubboRegistry.ServiceDiscovery
+	stop       chan struct{}
 }
 
 func NewRegistry(delegate dubboRegistry.Registry, sdDelegate dubboRegistry.ServiceDiscovery) *Registry {
 	return &Registry{
 		delegate:   delegate,
 		sdDelegate: sdDelegate,
+		stop:       make(chan struct{}),
 	}
 }
 
 func (r *Registry) Destroy() error {
+	close(r.stop)
 	return nil
 }
 
@@ -62,6 +69,7 @@ func (r *Registry) Subscribe(
 	resourceManager core_manager.ResourceManager,
 	cache *sync.Map,
 	discovery dubboRegistry.ServiceDiscovery,
+	regClient reg_client.RegClient,
 	out events.Emitter,
 	systemNamespace string,
 ) error {
@@ -81,6 +89,7 @@ func (r *Registry) Subscribe(
 		common.WithProtocol(consts.AdminProtocol),
 		common.WithParams(queryParams))
 	listener := NewNotifyListener(resourceManager, cache, discovery, out)
+
 	go func() {
 		err := r.delegate.Subscribe(subscribeUrl, listener)
 		if err != nil {
@@ -88,56 +97,67 @@ func (r *Registry) Subscribe(
 		}
 	}()
 
-	getMappingList := func(group string) (map[string]*gxset.HashSet, error) {
-		keys, err := metadataReport.GetConfigKeysByGroup(group)
-		if err != nil {
-			return nil, err
-		}
-
-		list := make(map[string]*gxset.HashSet)
-		for k := range keys.Items {
-			interfaceKey, _ := k.(string)
-			if !(interfaceKey == "org.apache.dubbo.mock.api.MockService") {
-				rule, err := metadataReport.GetServiceAppMapping(interfaceKey, group, nil)
-				if err != nil {
-					return nil, err
-				}
-				list[interfaceKey] = rule
-			}
-		}
-		return list, nil
+	scheduler := &Scheduler{
+		NewTicker: func() *time.Ticker {
+			return time.NewTicker(5 * time.Minute)
+		},
+		OnTick: func(ctx context.Context) error {
+			r.doSubscribe(resourceManager, r.sdDelegate, listener)
+			return nil
+		},
+		OnError: func(err error) {
+			logger.Error(err, "OnTick() failed")
+		},
+		OnStop: func() {
+			//
+		},
 	}
 
-	go func() {
-		mappings, err := getMappingList("mapping")
-		if err != nil {
-			logger.Error("Failed to get mapping")
-		}
-		for interfaceKey, oldApps := range mappings {
-			mappingListener := NewMappingListener(oldApps, listener, out, systemNamespace)
-			apps, _ := metadataReport.GetServiceAppMapping(interfaceKey, "mapping", mappingListener)
-			delSDListener := NewDubboSDNotifyListener(apps)
-			for appTmp := range apps.Items {
-				app := appTmp.(string)
-				instances := r.sdDelegate.GetInstances(app)
-				logger.Infof("Synchronized instance notification on subscription, instance list size %s", len(instances))
-				if len(instances) > 0 {
-					err = delSDListener.OnEvent(&dubboRegistry.ServiceInstancesChangedEvent{
-						ServiceName: app,
-						Instances:   instances,
-					})
-					if err != nil {
-						logger.Warnf("[ServiceDiscoveryRegistry] ServiceInstancesChangedListenerImpl handle error:%v", err)
-					}
-				}
-			}
-			delSDListener.AddListenerAndNotify(interfaceKey, listener)
-			err = r.sdDelegate.AddListener(delSDListener)
-			if err != nil {
-				logger.Warnf("Failed to Add Listener")
-			}
-		}
-	}()
+	go scheduler.Schedule(r.stop)
 
 	return nil
+}
+
+func (r *Registry) doSubscribe(resourceManager core_manager.ResourceManager, sdDelegate dubboRegistry.ServiceDiscovery, listener *NotifyListener) {
+	applicationList := &mesh.DubboApplicationResourceList{}
+	_ = resourceManager.List(context.Background(), applicationList)
+	apps := sdDelegate.GetServices()
+
+	newApps := make([]string, 0)
+	for _, a := range apps.Values() {
+		application := mesh.NewDubboApplicationResource()
+		newApp, _ := a.(string)
+		err := resourceManager.Get(context.Background(), application, store.GetByApplication(newApp))
+		if err != nil {
+			if !store.IsResourceNotFound(err) {
+				logger.Errorf("Error searching for existing app %s from resource manager.", newApp)
+			}
+			newApps = append(newApps, newApp)
+		}
+	}
+	// 生成应用列表
+	for _, app := range newApps {
+		instances := sdDelegate.GetInstances(app)
+		delSDListener := NewDubboSDNotifyListener(gxset.NewSet(app))
+		logger.Infof("Synchronized instance notification on subscription, instance list size %s", len(instances))
+		if len(instances) > 0 {
+			err := delSDListener.OnEvent(&dubboRegistry.ServiceInstancesChangedEvent{
+				ServiceName: app,
+				Instances:   instances,
+			})
+			if err != nil {
+				logger.Warnf("[ServiceDiscoveryRegistry] ServiceInstancesChangedListenerImpl handle error:%v", err)
+			}
+		}
+		delSDListener.AddListenerAndNotify("unifiedKey", listener)
+		err := sdDelegate.AddListener(delSDListener)
+		if err != nil {
+			logger.Warnf("Failed to Add Listener")
+		}
+	}
+
+	// todo, remove listeners of apps not exist in registry
+	//for _, a := range appsToRemove {
+	//	sdDelegate.RemoveListener(delSDListener)
+	//}
 }

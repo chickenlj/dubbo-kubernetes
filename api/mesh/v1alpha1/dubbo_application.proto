@@ -6,9 +6,9 @@ option go_package = "github.com/apache/dubbo-kubernetes/api/mesh/v1alpha1";
 
 import "api/mesh/options.proto";
 
-message Application {
-  option (dubbo.mesh.resource).name = "ApplicationResource";
-  option (dubbo.mesh.resource).type = "Application";
+message DubboApplication {
+  option (dubbo.mesh.resource).name = "DubboApplicationResource";
+  option (dubbo.mesh.resource).type = "DubboApplication";
   option (dubbo.mesh.resource).package = "mesh";
   option (dubbo.mesh.resource).dds.send_to_zone = false;
   option (dubbo.mesh.resource).ws.name = "application";
@@ -16,6 +16,6 @@ message Application {
   option (dubbo.mesh.resource).allow_to_inspect = true;
 
   string name = 1;
-  repeated string services = 2;
+  map<string, string> services = 2;
   repeated string instances = 3;
 }

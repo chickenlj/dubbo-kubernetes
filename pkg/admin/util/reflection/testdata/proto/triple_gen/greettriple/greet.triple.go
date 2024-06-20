@@ -5,7 +5,6 @@ package greettriple
 
 import (
 	"context"
-	"github.com/apache/dubbo-kubernetes/pkg/admin/util/reflection/testdata/proto"
 	"net/http"
 )
 
@@ -16,6 +15,10 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/common/constant"
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
+)
+
+import (
+	"github.com/apache/dubbo-kubernetes/pkg/admin/util/reflection/testdata/proto"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the Triple package

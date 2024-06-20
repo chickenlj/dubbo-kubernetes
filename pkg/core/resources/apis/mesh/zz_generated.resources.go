@@ -342,6 +342,114 @@ func init() {
 }
 
 const (
+	DubboApplicationType model.ResourceType = "DubboApplication"
+)
+
+var _ model.Resource = &DubboApplicationResource{}
+
+type DubboApplicationResource struct {
+	Meta model.ResourceMeta
+	Spec *mesh_proto.DubboApplication
+}
+
+func NewDubboApplicationResource() *DubboApplicationResource {
+	return &DubboApplicationResource{
+		Spec: &mesh_proto.DubboApplication{},
+	}
+}
+
+func (t *DubboApplicationResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *DubboApplicationResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *DubboApplicationResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *DubboApplicationResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*mesh_proto.DubboApplication)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		if protoType == nil {
+			t.Spec = &mesh_proto.DubboApplication{}
+		} else {
+			t.Spec = protoType
+		}
+		return nil
+	}
+}
+
+func (t *DubboApplicationResource) Descriptor() model.ResourceTypeDescriptor {
+	return DubboApplicationResourceTypeDescriptor
+}
+
+var _ model.ResourceList = &DubboApplicationResourceList{}
+
+type DubboApplicationResourceList struct {
+	Items      []*DubboApplicationResource
+	Pagination model.Pagination
+}
+
+func (l *DubboApplicationResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *DubboApplicationResourceList) GetItemType() model.ResourceType {
+	return DubboApplicationType
+}
+
+func (l *DubboApplicationResourceList) NewItem() model.Resource {
+	return NewDubboApplicationResource()
+}
+
+func (l *DubboApplicationResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*DubboApplicationResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*DubboApplicationResource)(nil), r)
+	}
+}
+
+func (l *DubboApplicationResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+func (l *DubboApplicationResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
+var DubboApplicationResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:                DubboApplicationType,
+	Resource:            NewDubboApplicationResource(),
+	ResourceList:        &DubboApplicationResourceList{},
+	ReadOnly:            false,
+	AdminOnly:           false,
+	Scope:               model.ScopeMesh,
+	WsPath:              "applications",
+	DubboctlArg:         "application",
+	DubboctlListArg:     "applications",
+	AllowToInspect:      true,
+	IsPolicy:            true,
+	SingularDisplayName: "Dubbo Application",
+	PluralDisplayName:   "Dubbo Applications",
+	IsExperimental:      false,
+}
+
+func init() {
+	registry.RegisterType(DubboApplicationResourceTypeDescriptor)
+}
+
+const (
 	DynamicConfigType model.ResourceType = "DynamicConfig"
 )
 

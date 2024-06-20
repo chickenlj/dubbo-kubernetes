@@ -19,13 +19,16 @@ package dataplane
 
 import (
 	"context"
-	kube_apps "k8s.io/api/apps/v1"
-	kube_core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 import (
 	"github.com/pkg/errors"
+
+	kube_apps "k8s.io/api/apps/v1"
+
+	kube_core "k8s.io/api/core/v1"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 )

@@ -80,6 +80,10 @@ func (lstn *DubboSDNotifyListener) OnEvent(e observer.Event) error {
 
 	logger.Infof("Received instance notification event of service %s, instance list size %s", ce.ServiceName, len(ce.Instances))
 
+	// 10.0.0.1    metadata
+	// 10.0.0.2    metadata
+
+	// revision -> metadata
 	for _, instances := range lstn.allInstances {
 		for _, instance := range instances {
 			metadataInstance := ConvertToMetadataInstance(instance)

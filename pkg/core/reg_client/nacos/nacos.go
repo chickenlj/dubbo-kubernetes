@@ -44,19 +44,19 @@ type nacosRegClientReport struct {
 }
 
 // GetChildren TODO
-func (z *nacosRegClientReport) GetChildren(path string) ([]string, error) {
+func (n *nacosRegClientReport) GetChildren(path string) ([]string, error) {
 	return nil, nil
 }
 
-func (z *nacosRegClientReport) SetContent(path string, value []byte) error {
+func (n *nacosRegClientReport) SetContent(path string, value []byte) error {
 	return nil
 }
 
-func (z *nacosRegClientReport) GetContent(path string) ([]byte, error) {
+func (n *nacosRegClientReport) GetContent(path string) ([]byte, error) {
 	return nil, nil
 }
 
-func (z *nacosRegClientReport) DeleteContent(path string) error {
+func (n *nacosRegClientReport) DeleteContent(path string) error {
 	return nil
 }
 

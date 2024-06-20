@@ -71,6 +71,7 @@ type traditionalStore struct {
 	regClient      reg_client.RegClient
 	eventWriter    events.Emitter
 	mu             sync.RWMutex
+	apps           *sync.Map
 }
 
 func NewStore(
@@ -210,6 +211,10 @@ func (t *traditionalStore) Create(_ context.Context, resource core_model.Resourc
 		if err != nil {
 			return err
 		}
+	case mesh.DubboApplicationType:
+		if err := t.createOrUpdateApp(resource); err != nil {
+			logger.Errorf("Create application resource %s error, this might cause the data in console not accurate.", resource.GetMeta().GetName())
+		}
 	default:
 		bytes, err := core_model.ToYAML(resource.GetSpec())
 		if err != nil {
@@ -247,6 +252,11 @@ func (t *traditionalStore) Create(_ context.Context, resource core_model.Resourc
 	return nil
 }
 
+func (t *traditionalStore) createOrUpdateApp(resource core_model.Resource) error {
+	t.apps.Store(resource.GetMeta().GetName(), resource)
+	return nil
+}
+
 func (t *traditionalStore) Update(ctx context.Context, resource core_model.Resource, fs ...store.UpdateOptionsFunc) error {
 	opts := store.NewUpdateOptions(fs...)
 	name, _, err := util_k8s.CoreNameToK8sName(opts.Name)
@@ -256,6 +266,10 @@ func (t *traditionalStore) Update(ctx context.Context, resource core_model.Resou
 	switch resource.Descriptor().Name {
 	case mesh.DataplaneType:
 		// Dataplane资源无法更新, 只能获取和删除
+	case mesh.DubboApplicationType:
+		if err := t.createOrUpdateApp(resource); err != nil {
+			logger.Errorf("Create application resource %s error, this might cause the data in console not accurate.", resource.GetMeta().GetName())
+		}
 	case mesh.TagRouteType:
 		labels := opts.Labels
 		base := mesh_proto.Base{
@@ -590,6 +604,7 @@ func (c *traditionalStore) Get(_ context.Context, resource core_model.Resource, 
 		if err != nil {
 			return err
 		}
+		// fixme, load metadata, set metadata to resource.Spec
 		resource.SetMeta(&resourceMetaObject{
 			Name: name,
 			Mesh: opts.Mesh,

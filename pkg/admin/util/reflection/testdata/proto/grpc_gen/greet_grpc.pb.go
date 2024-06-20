@@ -8,10 +8,16 @@ package grpc_gen
 
 import (
 	context "context"
-	greet "github.com/apache/dubbo-kubernetes/pkg/admin/util/reflection/testdata/proto"
+)
+
+import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+)
+
+import (
+	greet "github.com/apache/dubbo-kubernetes/pkg/admin/util/reflection/testdata/proto"
 )
 
 // This is a compile-time assertion to ensure that this generated file

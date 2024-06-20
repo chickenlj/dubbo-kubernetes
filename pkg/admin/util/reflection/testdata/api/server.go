@@ -3,13 +3,17 @@ package api
 import (
 	"context"
 	"fmt"
-	greetgrpc "github.com/apache/dubbo-kubernetes/pkg/admin/util/reflection/testdata/proto/grpc_gen"
 	"io"
 	"strings"
+)
 
+import (
 	triple "dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
+)
 
+import (
 	greet "github.com/apache/dubbo-kubernetes/pkg/admin/util/reflection/testdata/proto"
+	greetgrpc "github.com/apache/dubbo-kubernetes/pkg/admin/util/reflection/testdata/proto/grpc_gen"
 	"github.com/apache/dubbo-kubernetes/pkg/admin/util/reflection/testdata/proto/triple_gen/greettriple"
 )
 

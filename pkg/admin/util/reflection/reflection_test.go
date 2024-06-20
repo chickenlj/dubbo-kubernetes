@@ -24,14 +24,20 @@ import (
 	"os"
 	"testing"
 	"time"
+)
 
+import (
 	_ "dubbo.apache.org/dubbo-go/v3/imports"
 	"dubbo.apache.org/dubbo-go/v3/protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
+
 	"github.com/stretchr/testify/assert"
+
 	"google.golang.org/grpc"
 	grpcreflection "google.golang.org/grpc/reflection"
+)
 
+import (
 	"github.com/apache/dubbo-kubernetes/pkg/admin/util/reflection/testdata/api"
 	greetgrpc "github.com/apache/dubbo-kubernetes/pkg/admin/util/reflection/testdata/proto/grpc_gen"
 	"github.com/apache/dubbo-kubernetes/pkg/admin/util/reflection/testdata/proto/triple_gen/greettriple"

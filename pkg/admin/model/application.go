@@ -19,18 +19,20 @@ package model
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+)
+
+import (
 	"github.com/apache/dubbo-kubernetes/api/mesh/v1alpha1"
 	"github.com/apache/dubbo-kubernetes/pkg/admin/constants"
 	"github.com/apache/dubbo-kubernetes/pkg/config/core"
 	"github.com/apache/dubbo-kubernetes/pkg/core/managers/apis/dataplane"
 	"github.com/apache/dubbo-kubernetes/pkg/core/resources/apis/mesh"
 	core_runtime "github.com/apache/dubbo-kubernetes/pkg/core/runtime"
-	"strconv"
-	"strings"
 )
 
-//todo Application Detail
-
+// todo Application Detail
 type ApplicationDetailReq struct {
 	AppName string `form:"appName"`
 }

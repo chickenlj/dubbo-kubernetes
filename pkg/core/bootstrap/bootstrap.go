@@ -47,6 +47,7 @@ import (
 	"github.com/apache/dubbo-kubernetes/pkg/core/extensions"
 	"github.com/apache/dubbo-kubernetes/pkg/core/governance"
 	"github.com/apache/dubbo-kubernetes/pkg/core/logger"
+	"github.com/apache/dubbo-kubernetes/pkg/core/managers/apis/application"
 	"github.com/apache/dubbo-kubernetes/pkg/core/managers/apis/condition_route"
 	dataplane_managers "github.com/apache/dubbo-kubernetes/pkg/core/managers/apis/dataplane"
 	"github.com/apache/dubbo-kubernetes/pkg/core/managers/apis/dynamic_config"
@@ -390,6 +391,14 @@ func initializeResourceManager(cfg dubbo_cp.Config, builder *core_runtime.Builde
 	customizableManager.Customize(
 		mesh.MetaDataType,
 		metadata_managers.NewMetadataManager(
+			builder.ResourceStore(),
+			manager,
+			deployMode,
+		))
+
+	customizableManager.Customize(
+		mesh.DubboApplicationType,
+		application.NewDubboApplicationManager(
 			builder.ResourceStore(),
 			manager,
 			deployMode,
